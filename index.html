@@ -1,0 +1,196 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <script type="text/javascript" src="http://code.jquery.com/jquery-1.5.1.min.js"></script>
+  <style>
+    body { width:40em; margin:1em auto; }
+    .txt-video { margin-bottom: 1em; position: relative; padding-bottom: 56.25%; padding-top: 25px; height: 0; border:1px solid; }
+    .txt-video a:before {
+      content: "";
+      position: absolute; z-index: 10; left: 50%; top: 50%; margin: -30px 0 0 -43px; 
+      width: 86px; height: 60px; border-radius:15%;
+      background-color: rgba(20,20,20,.9);
+      box-shadow: 0 -1px 1px rgba(255,255,255,.5), 0 1px 1px rgba(0,0,0,.7);
+    }
+    .txt-video a:hover:before {
+      background-color: #CB322C;
+      background-image: -webkit-gradient(linear, left top, left bottom, from(#CB322C), to(#6E0610));
+      background-image: -webkit-linear-gradient(top, #CB322C, #6E0610);
+      background-image:    -moz-linear-gradient(top, #CB322C, #6E0610);
+      background-image:      -o-linear-gradient(top, #CB322C, #6E0610);
+      background-image:         linear-gradient(to bottom, #CB322C, #6E0610);
+    }
+    .txt-video a:after {
+      content: "";
+      width: 0px;
+      height: 0px;
+      border-style: solid;
+      border-width: 15px 0 15px 30px;
+      border-color: transparent transparent transparent #fff;
+      position: absolute; z-index: 11; left: 50%; top: 50%; margin: -15px 0 0 -12px; 
+    }
+    /* .txt-video a:hover:after {
+      border-width: 16px 0 16px 32px; margin: -16px 0 0 -13px; 
+    } */
+    .txt-video iframe { position: absolute; top: 0; left: 0; width: 100%; height:100%; }
+    .txt-video img { position: absolute; top: 0; left: 0; width: 100%; height:100%; z-index: 1; }
+    .txt-video h5 { position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+      text-align: left; padding: 5px 10px; color: #ccc; font-size: 16px; font-family: Arial; font-weight: normal; margin: 0; background: rgba(0, 0, 0, .8); text-shadow:0 1px 0 #000; overflow: hidden;
+    }
+  </style>
+  <script type= "text/javascript">
+  
+
+    function getYoutubeIframe(id){
+      return '<iframe type="text/html" width="640" height="385" src="http://www.youtube.com/embed/'+id+'?wmode=opaque&amp;showsearch=0&amp;rel=0&amp;iv_load_policy=3&amp;controls=2&amp;autohide=1&amp;autoplay=1" frameborder="0">';
+    }
+    function getVimeoIframe(id){
+      return '<iframe src="http://player.vimeo.com/video/'+id+'?autoplay=1" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>';
+    }
+
+    function parseHref (href) {
+      var a = document.createElement('a');
+      a.href = href;
+      var url = new Object();
+
+      url["href"] = a.href; // 'http://site.ru/page/123?foo=bar#top'
+      url["protocol"] = a.protocol; // 'http:'
+      url["host"] = a.host; // 'site.ru'
+      url["pathname"] = a.pathname; // '/page/123'
+      url["search"] = parseQueryString(a.search); // '?foo=bar'
+      url["hash"] = a.hash; // '#top'
+      return url;
+    }
+
+    function parseQueryString(query, groupByName) {
+        if (typeof query != 'string') {
+            throw 'Ivalid input';
+        }
+        
+        var parsed = {},
+            hasOwn = parsed.hasOwnProperty,
+            query = query.substring(1).replace(/\+/g, ' '),
+            pairs = query.split(/[&;]/);
+        
+        for (var i = 0; i < pairs.length; i++) {
+            var pair = pairs[i].match(/^([^=]*)=?(.*)/);
+            if (pair[1]) {
+                try {
+                    var name  = decodeURIComponent(pair[1]);
+                    var value = decodeURIComponent(pair[2]);
+                } catch(e) {
+                    throw 'Invaid %-encoded sequence';
+                }
+                
+                if (!groupByName) {
+                    parsed[name] = value;
+                } else if (hasOwn.call(parsed, name)) {
+                    parsed[name].push(value);
+                } else {
+                    parsed[name] = [value];
+                }
+            }
+        }
+        return parsed;
+    }
+
+    jQuery(document).ready(function($){
+      $(".txt-video > a").each(function(){
+        var link = $(this);
+        var url = parseHref(link.attr("href"));
+
+        if(url.host.indexOf("youtube") > -1){
+          $.ajax({
+            url: "http://gdata.youtube.com/feeds/api/videos/"+url.search.v+"?v=2&alt=json",
+            dataType: "jsonp",
+            success: function (data) {
+              link.append("<h5>"+data.entry.title.$t+"</h5>").click(function(e){
+                e.preventDefault();
+                link.replaceWith(getYoutubeIframe(url.search.v));
+              });
+            }
+          });
+          return;
+        }
+
+        if(url.host.indexOf("vimeo") > -1){
+          link.click(function(e){
+            e.preventDefault();
+            link.replaceWith(getVimeoIframe(url.pathname.substring(1)));
+          });
+          return;
+        }
+      });
+    });
+
+  </script>
+</head>
+<body bgcolor="grey">
+
+  <p>При обработке тытрубы и вимео парсить название и выводить в формате, как вимео ниже: картинка и заголовок</p>
+  <p>предусмотреть возможность вставки текста, обрамленного iframe (все iframe поддерживаемых сервисов) — чистить iframe, как с вк для случаев ниже</p>
+  <p>Картинки вытягивать и сохранять локально, если картинку вытянуть не удалось — делаем ссылку на картинку на сервере. Если такой картинки нет (вконтакте) — встаиваем iframe</p>
+  
+  <div class="txt-video">
+    <iframe src="http://vk.com/video_ext.php?oid=5479729&id=161836171&hash=150145762b49d904&hd=1" frameborder="0"></iframe>
+  </div>
+  
+  <div class="txt-video">
+    <iframe type="text/html" width="607" height="360" src="http://player.vimeo.com/video/27726761" frameborder="0"></iframe>
+  </div>
+  
+  <div class="txt-video">
+    <iframe type="text/html" width="607" height="360" src="http://www.youtube.com/embed/If5MF4wm1T8" frameborder="0"></iframe>
+  </div>
+  
+  <div class="txt-video">
+    <iframe src="http://rutube.ru/video/embed/6032725" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowfullscreen scrolling="no"></iframe>
+  </div>
+
+  <div class="txt-video">
+    <a href="http://vimeo.com/36782466">
+      <img src="http://b.vimeocdn.com/ts/345/557/345557941_640.jpg" alt="">
+      <h5>Заголовок</h5>
+    </a>
+  </div>
+
+  <div class="txt-video">
+    <a href="http://www.youtube.com/watch?feature=player_embedded&v=FweA7YD1XUU">
+      <img src="http://img.youtube.com/vi/FweA7YD1XUU/hqdefault.jpg" alt="">
+    </a>
+  </div>
+  <div class="txt-video">
+    <a href="http://www.youtube.com/watch?feature=player_embedded&v=FweA7YD1XUU">
+      <img src="http://img.youtube.com/vi/FweA7YD1XUU/hqdefault.jpg" alt="">
+    </a>
+  </div>
+  <div class="txt-video">
+    <a href="http://www.youtube.com/watch?feature=player_embedded&v=k6aTKBXVUqc">
+      <img src="http://img.youtube.com/vi/k6aTKBXVUqc/hqdefault.jpg" alt="">
+    </a>
+  </div>
+  <div class="txt-video">
+    <a href="http://www.youtube.com/watch?feature=player_embedded&v=IVc5Kw0_4j8">
+      <img src="http://img.youtube.com/vi/IVc5Kw0_4j8/hqdefault.jpg" alt="">
+    </a>
+  </div>
+  <div class="txt-video">
+    <a href="http://www.youtube.com/watch?feature=player_embedded&v=FweA7YD1XUU">
+      <img src="http://img.youtube.com/vi/FweA7YD1XUU/hqdefault.jpg" alt="">
+    </a>
+  </div>
+  <div class="txt-video">
+    <a href="http://www.youtube.com/watch?feature=player_embedded&v=k6aTKBXVUqc">
+      <img src="http://img.youtube.com/vi/k6aTKBXVUqc/hqdefault.jpg" alt="">
+    </a>
+  </div>
+  <div class="txt-video">
+    <a href="http://www.youtube.com/watch?feature=player_embedded&v=IVc5Kw0_4j8">
+      <img src="http://img.youtube.com/vi/IVc5Kw0_4j8/hqdefault.jpg" alt="">
+    </a>
+  </div>
+</body>
+</html>
